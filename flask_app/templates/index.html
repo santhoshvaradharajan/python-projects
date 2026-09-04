@@ -1,1 +1,15 @@
-#
+<!DOCTYPE html>
+<html>
+<body>
+    <h1>Orders</h1>
+    <form action="/add" method="post">
+        <input name="item" placeholder="Item name">
+        <button type="submit">Add</button>
+    </form>
+    {% for order in orders %}
+        <p>{{ order[1]}} | {{ order[2]}} | {{ order[3] }}
+        <a href = "/complete/{{order[0] }}">complete</a>
+        <a href = "/delete/{{ order[0] }}">Delete</a></p>
+    {% endfor %}    
+</body>
+</html>
