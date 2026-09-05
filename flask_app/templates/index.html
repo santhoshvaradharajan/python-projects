@@ -1,9 +1,39 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <title>orders</title>
+    <style>
+        body {
+            font-family: Arial;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        input {
+            padding: 8px;
+            width: 300px;
+        }
+        button {
+            padding: 8px 16px;
+            background: green;
+            color: white;
+            border: none;
+        }
+        .order {
+            padding: 10px;
+            border: 1px solid;
+            margin: 5px 0;
+        }
+         a {
+            margin-left: 10px;
+            color: red;
+        }
+    </style>    
 <body>
     <h1>Orders</h1>
     <form action="/add" method="post">
         <input name="item" placeholder="Item name">
+        <input name ="quantity" type = "number" placeholder = "Quantity" min = "1">
         <button type="submit">Add</button>
     </form>
     {% for order in orders %}

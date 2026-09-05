@@ -17,6 +17,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS orders(
             id INTEGER PRIMARY KEY,
             item NOT NULL,
+            quantity INT NOT NULL,
             status TEXT DEFAULT 'pending',
             time DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -43,9 +44,10 @@ def index():
 #create a variable called item which represents one string which is whatever we types
 def add():
     item = request.form.get("item")
+    quantity = request.form.get("quantity")
     with sqlite3.connect("orders.db") as conn:
 # use ? for protect from sql injection attaack
-        conn.execute("INSERT INTO orders (item) VALUES(?)",(item,))
+        conn.execute("INSERT INTO orders (item, quantity) VALUES(?,?)",(item, quantity))
         conn.commit()
     return redirect("/")
 
