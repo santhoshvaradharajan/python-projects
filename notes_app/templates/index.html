@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <h2>Notes</h2>
+    <form action="/add" method="post">
+        <input name="title" placeholder="Title name">
+        <input name ="content" type = "Text" placeholder = "Content">
+        <button type="submit">Add</button>
+    </form>
+    <ul>
+        {% for note in notes %}
+    <li>
+        <strong>{{ note[2] }}</strong> - {{ note[1] }}
+        <br>
+        <small>{{ note[3] }}</small>
+        <a href = "/delete/{{ note[0] }}">Delete</a>
+    </li>
+        {% endfor %}
+    </ul>
+</head>   
+</html>
