@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <h1>{{ group.name }}</h1>
+    <ul>
+    {% for member in members %}
+        <li>{{ member.username  }}: {{ balances[member.username] }}</li>
+    {% endfor %}
+    </ul>
+
+    <form action="/group/{{ group.id }}/add_member" method="post">
+        <input name="username" placeholder="Username to add">
+        <button type="submit">Add Member</button>
+    </form>
+    <form action ="/group/{{ group.id }}/add_expense" method ="post">
+        <input name ="amount" type = "number" placeholder = "Amount">
+        <input name = "description" placeholder = "Description">
+        <button type ="submit">Add Expense</button>
+    </form>
+</body>
+</html>
