@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head><title>Voice Order</title></head>
+<body>
+  <h1>Voice Order</h1>
+  <button id="talk">Click and speak</button>
+  <p>You said: <span id="transcript"></span></p>
+  <pre id="result"></pre>
+  <button id="confirm" style="display:none">Confirm order</button>
+
+  <script>
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-GB";
+    let pendingItems = null;
+
+    const result = document.getElementById("result");
+    const confirmBtn = document.getElementById("confirm");
+
+    document.getElementById("talk").onclick = () => {
+      confirmBtn.style.display = "none";
+      recognition.start();
+    };
+
+    recognition.onresult = async (event) => {
+      const text = event.results[0][0].transcript;
+      document.getElementById("transcript").textContent = text;
+
+      const response = await fetch("/parse", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({text: text})
+      });
+      const data = await response.json();
+      if (data.error) {
+        result.textContent = "Sorry: " + data.error;
+        return;
+      }
+      pendingItems = data.items;
+      let lines = "Is this right?\n";
+      for (const item of data.items) {
+        lines += item.quantity + " x " + item.name + "\n";
+      }
+      result.textContent = lines;
+      confirmBtn.style.display = "inline";
+    };
+
+    confirmBtn.onclick = async () => {
+      const response = await fetch("/order", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({items: pendingItems})
+      });
+      const data = await response.json();
+      if (data.error) {
+        result.textContent = "Sorry: " + data.error;
+        return;
+      }
+      let lines = "Order #" + data.order_id + " saved\n";
+      for (const item of data.items) {
+        lines += item.quantity + " x " + item.name + "\n";
+      }
+      lines += "Total: €" + data.total.toFixed(2);
+      result.textContent = lines;
+      confirmBtn.style.display = "none";
+    };
+  </script>
+</body>
+</html>
