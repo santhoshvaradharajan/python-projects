@@ -75,6 +75,17 @@ def get_order_total(order_id):
         for r in rows:
             total += r["price"] * r["quantity"]
         return total
+def get_items_total(items):
+    with sqlite3.connect("voice_order.db") as conn:
+        conn.row_factory = sqlite3.Row
+        total = 0
+        for item in items:
+            row = conn.execute("SELECT price FROM menu_items WHERE name = ?",
+                            (item["name"],)).fetchone()
+            if row is None:
+                raise ValueError(f"Unknown Item : {item["name"]}")
+            total += row["price"] * item["quantity"]
+        return total
 if __name__ == "__main__":
     items = extract_items("can i get 2 chicken tikka masala and 1 sheek kebab starter")
     save_order(items)
