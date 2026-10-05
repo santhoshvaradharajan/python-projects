@@ -86,6 +86,27 @@ def get_items_total(items):
                 raise ValueError(f"Unknown Item : {item["name"]}")
             total += row["price"] * item["quantity"]
         return total
+def get_recent_orders(limit = 20):
+    with sqlite3.connect("voice_order.db") as conn:
+        conn.row_factory = sqlite3.Row
+        orders = conn.execute("SELECT id, created_at FROM orders ORDER BY id DESC LIMIT ?",
+                              (limit,)).fetchall()
+        result = []
+        for o in orders:
+            items = conn.execute("""
+                SELECT m.name, m.price, oi.quantity
+                FROM order_items oi
+                JOIN menu_items m ON m.id = oi.menu_item_id
+                WHERE oi.order_id = ?
+            """, (o["id"],)).fetchall()
+            total = 0
+            for i in items:
+                total += i["price"] * i["quantity"]
+            result.append({"id" : o["id"],
+                               "created_at" : o["created_at"],
+                               "items" : [dict(i) for i in items],
+                               "total" : total})
+        return result
 if __name__ == "__main__":
     items = extract_items("can i get 2 chicken tikka masala and 1 sheek kebab starter")
     save_order(items)

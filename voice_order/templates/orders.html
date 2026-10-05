@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Orders</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f4; }
+    .order { background: white; border-radius: 8px; padding: 12px 16px;
+             margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+    .order h3 { margin: 0 0 6px 0; }
+    .time { color: #777; font-size: 14px; }
+    .total { font-weight: bold; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <h1>Orders</h1>
+  <p class="time">Updates every 5 seconds</p>
+  <div id="orders"></div>
+
+  <script>
+    async function loadOrders() {
+      const response = await fetch("/orders");
+      const orders = await response.json();
+      const box = document.getElementById("orders");
+      box.innerHTML = "";
+      for (const o of orders) {
+        const div = document.createElement("div");
+        div.className = "order";
+        let text = "";
+        for (const i of o.items) {
+          text += i.quantity + " x " + i.name + "\n";
+        }
+        const title = document.createElement("h3");
+        title.textContent = "Order #" + o.id;
+        const time = document.createElement("div");
+        time.className = "time";
+        time.textContent = o.created_at;
+        const items = document.createElement("pre");
+        items.textContent = text;
+        const total = document.createElement("div");
+        total.className = "total";
+        total.textContent = "Total: €" + o.total.toFixed(2);
+        div.append(title, time, items, total);
+        box.appendChild(div);
+      }
+    }
+    loadOrders();
+    setInterval(loadOrders, 5000);
+  </script>
+</body>
+</html>

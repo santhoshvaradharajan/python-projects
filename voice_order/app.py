@@ -1,5 +1,5 @@
 from flask import Flask, redirect, session, render_template, request, jsonify
-from parse_order import extract_items, save_order, get_order_total, get_items_total
+from parse_order import extract_items, save_order, get_order_total, get_items_total, get_recent_orders
 from twilio.twiml.voice_response import VoiceResponse
 import sqlite3
 
@@ -154,6 +154,13 @@ def voice_confirm():
                                  method = "POST", speech_timeout = "auto")
         gather.say("Sorry, I didn't catch that. Please say yes or no.")
     return str(resp), 200, {"Content-Type": "text/xml"}
+
+@app.route("/orders")
+def orders_data():
+    return jsonify(get_recent_orders())
+@app.route("/kitchen")
+def kitchen():
+    return render_template("orders.html")
 init_db()
 seed_menu()
 
