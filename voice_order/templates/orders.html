@@ -33,7 +33,7 @@
         title.textContent = "Order #" + o.id;
         const time = document.createElement("div");
         time.className = "time";
-        time.textContent = o.created_at;
+                time.textContent = new Date(o.created_at.replace(" ", "T") + "Z").toLocaleString();
         const items = document.createElement("pre");
         items.textContent = text;
         const total = document.createElement("div");
