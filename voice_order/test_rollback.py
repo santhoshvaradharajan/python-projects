@@ -2,7 +2,7 @@ from parse_order import save_order
 import sqlite3
 
 def count():
-    with sqlite3.connect("voice_order.db") as c:
+    with sqlite3.connect(DB_PATH) as c:
         return c.execute("SELECT COUNT(*) FROM orders").fetchone()[0]
 before = count()
 try:

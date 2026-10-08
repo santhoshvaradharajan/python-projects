@@ -193,7 +193,6 @@ def add_expense(group_id):
         payer_row = conn.execute("SELECT id FROM users WHERE username = ?",
                      (username,)).fetchone()
         if payer_row is None:
-
             return "LoggedIn USER NOT FOUND", 400
         paid_by = payer_row["id"]
 

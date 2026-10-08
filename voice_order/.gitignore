@@ -1,3 +1,3 @@
 .env
-voice_order.db
+DB_PATH
 __pycache__/

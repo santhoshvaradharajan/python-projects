@@ -4,11 +4,13 @@ from anthropic import Anthropic
 import json
 import sqlite3
 
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "voice_order.db")
+
 load_dotenv()
 client = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
 def get_menu():
-    with sqlite3.connect("voice_order.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute("SELECT name, price FROM menu_items").fetchall()
         return rows
@@ -47,7 +49,7 @@ def extract_items(order_text):
 
 def save_order(items):
     validate_items(items)
-    with sqlite3.connect("voice_order.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         row = conn.execute("INSERT INTO orders DEFAULT VALUES")
         order_id = row.lastrowid
@@ -65,7 +67,7 @@ def save_order(items):
         return order_id
     
 def get_order_total(order_id):
-    with sqlite3.connect("voice_order.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute("""
             SELECT m.price, oi.quantity
@@ -78,7 +80,7 @@ def get_order_total(order_id):
             total += r["price"] * r["quantity"]
         return total
 def get_items_total(items):
-    with sqlite3.connect("voice_order.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         total = 0
         for item in items:
@@ -89,7 +91,7 @@ def get_items_total(items):
             total += row["price"] * item["quantity"]
         return total
 def get_recent_orders(limit = 20):
-    with sqlite3.connect("voice_order.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         orders = conn.execute("SELECT id, created_at FROM orders ORDER BY id DESC LIMIT ?",
                               (limit,)).fetchall()
@@ -125,12 +127,12 @@ def validate_items(items):
             raise ValueError("Quantity for " + str(item["name"]) +
                              " must be between 1 and " + str(MAX_QUANTITY))
 def save_pending(call_sid, items):
-    with sqlite3.connect("voice_order.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         conn.execute("INSERT OR REPLACE INTO pending_calls (call_sid, items) VALUES(?, ?)",
                              (call_sid, json.dumps(items)))
 def get_pending(call_sid):
-    with sqlite3.connect("voice_order.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         result = conn.execute("SELECT items FROM pending_calls WHERE call_sid = ?",
                               (call_sid,)).fetchone()
@@ -138,14 +140,14 @@ def get_pending(call_sid):
             return None
         return json.loads(result[0])
 def delete_pending(call_sid):
-    with sqlite3.connect("voice_order.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         conn.execute("DELETE FROM pending_calls WHERE call_sid = ?",
                            (call_sid,))
 if __name__ == "__main__":
     items = extract_items("can i get 2 chicken tikka masala and 1 sheek kebab starter")
     save_order(items)
-    conn = sqlite3.connect("voice_order.db")
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     for row in conn.execute("SELECT * FROM orders").fetchall():
         print(dict(row))

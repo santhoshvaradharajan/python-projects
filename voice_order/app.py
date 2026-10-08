@@ -1,12 +1,12 @@
 from flask import Flask, redirect, session, render_template, request, jsonify
-from parse_order import extract_items, save_order, get_order_total, get_items_total, get_recent_orders, save_pending, get_pending, delete_pending
+from parse_order import extract_items, save_order, get_order_total, get_items_total, get_recent_orders, save_pending, get_pending, delete_pending, DB_PATH
 from twilio.twiml.voice_response import VoiceResponse
 import sqlite3
 
 app = Flask(__name__)
 
 def init_db():
-    conn =sqlite3.connect("voice_order.db")
+    conn =sqlite3.connect(DB_PATH)
     conn.execute("""
         CREATE TABLE IF NOT EXISTS menu_items(
             id INTEGER PRIMARY KEY,
@@ -39,7 +39,7 @@ def init_db():
     conn.commit()
     conn.close()
 def seed_menu():
-    conn = sqlite3.connect("voice_order.db")
+    conn = sqlite3.connect(DB_PATH)
     count = conn.execute("SELECT COUNT(*) FROM menu_items").fetchone()[0]
     if count == 0:
         conn.execute("INSERT INTO menu_items(name, price) VALUES(?, ?)",

@@ -1,5 +1,5 @@
 import sqlite3
-conn = sqlite3.connect("voice_order.db")
+conn = sqlite3.connect(DB_PATH)
 conn.row_factory = sqlite3.Row
 rows = conn.execute("""
     SELECT m.name, m.price, oi.quantity
