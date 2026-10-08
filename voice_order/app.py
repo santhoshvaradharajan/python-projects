@@ -1,5 +1,5 @@
 from flask import Flask, redirect, session, render_template, request, jsonify
-from parse_order import extract_items, save_order, get_order_total, get_items_total, get_recent_orders
+from parse_order import extract_items, save_order, get_order_total, get_items_total, get_recent_orders, save_pending, get_pending, delete_pending
 from twilio.twiml.voice_response import VoiceResponse
 import sqlite3
 
@@ -27,6 +27,13 @@ def init_db():
             order_id INTEGER,
             menu_item_id INTEGER,
             quantity INTEGER
+            )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS pending_calls(
+            call_sid TEXT PRIMARY KEY,
+            items TEXT NOT NULL,
+            created at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
     """)
     conn.commit()
@@ -97,7 +104,6 @@ def voice():
     resp.say("Sorry, I didn't hear anything. Goodbye.")
     return str(resp), 200, {"Content-Type": "text/xml"}
 
-pending_orders = {}
 @app.route("/voice/order", methods = ["POST"])
 def voice_order():
     call_sid = request.form.get("CallSid")
@@ -117,7 +123,7 @@ def voice_order():
         resp.redirect("/voice", method = "POST")
         return str(resp), 200, {"Content-Type": "text/xml"}
     
-    pending_orders[call_sid] = items
+    save_pending(call_sid, items)
     parts = [str(i["quantity"]) + " " + i["name"] for i in items]
     gather = resp.gather(input = "speech", action = "/voice/confirm",
                          method = "POST", speech_timeout = "auto")
@@ -127,31 +133,35 @@ def voice_order():
     return str(resp), 200, {"Content-Type": "text/xml"}
 @app.route("/voice/confirm", methods = ["POST"])
 def voice_confirm():
+    tries = int(request.args.get("tries", 0))
     call_sid = request.form.get("CallSid")
     answer =  request.form.get("SpeechResult", "").lower()
     words = answer.replace(",", " ").replace(".", " ").split()
     resp = VoiceResponse()
-    items = pending_orders.get(call_sid)
+    items = get_pending(call_sid)
 
     if not items:
         resp.say("Sorry, something went wrong. Let's try again?")
         resp.redirect("/voice", method = "POST")
     elif any(w in words for w in ["no", "nope", "wrong", "not"]):
-        pending_orders.pop(call_sid, None)
+        delete_pending(call_sid)
         resp.say("okay, Let's try again.")
         resp.redirect("/voice", method = "POST")
-    elif any(w in words for w in ["yes", "yup", "correct", "right"]):
+    elif any(w in words for w in ["yes", "yeah", "correct", "right"]):
         try:
             order_id = save_order(items)
-            pending_orders.pop(call_sid, None)
+            delete_pending(call_sid)
             resp.say("Thank you, Your order number is " + str(order_id) + ". Goodbye")
             resp.hangup()
         except ValueError:
-            resp.say("Sorry ther is some problem, Let's try again.")
+            resp.say("Sorry their is some problem, Let's try again.")
             resp.redirect("/voice", method = "POST")
+    elif tries >= 2:
+        delete_pending(call_sid)
+        resp.say("sorry, I couldn't understand anything, please Call me again")
+        resp.hangup()    
     else:
-        gather = resp.gather(input = "speech", action = "/voice/confirm",
-                                 method = "POST", speech_timeout = "auto")
+        gather = resp.gather(input="speech", action=f"/voice/confirm?tries={tries + 1}", speech_timeout="auto")
         gather.say("Sorry, I didn't catch that. Please say yes or no.")
     return str(resp), 200, {"Content-Type": "text/xml"}
 
@@ -161,6 +171,7 @@ def orders_data():
 @app.route("/kitchen")
 def kitchen():
     return render_template("orders.html")
+
 init_db()
 seed_menu()
 
