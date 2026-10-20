@@ -1,3 +1,4 @@
 .env
-DB_PATH
+*.db
 __pycache__/
+clear_orders.py

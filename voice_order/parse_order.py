@@ -29,7 +29,10 @@ A customer said: {order_text}
 Figure out which menu items they want and how many of each.
 Respond with ONLY a JSON array, no other text, in this exact format:
 [{{"name": "item name from the menu", "quantity": number}}]
+If what the customer said could match more than one menu item (for example "chicken tikka" when the menu has both a starter and a main), do NOT guess. Instead use this format for that item:
+{{"ambiguous": ["first possible menu item", "second possible menu item"], "quantity": number}}
 Ignore anything the customer says that isn't on the menu.
+Every name in an "ambiguous" list must be copied exactly from the menu. Never invent a name.
 """
     message = client.messages.create(
          model = "claude-haiku-4-5-20251001",
@@ -49,6 +52,9 @@ def extract_items(order_text):
 
 def save_order(items):
     validate_items(items)
+    if any("ambiguous" in item for item in items):
+            raise ValueError("Order has an unclear item")
+    
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         row = conn.execute("INSERT INTO orders DEFAULT VALUES")
@@ -118,13 +124,23 @@ def validate_items(items):
     if not isinstance(items, list):
         raise ValueError("Items must be a list")
     for item in items:
-        if not isinstance(item, dict) or "name" not in item or "quantity" not in item:
-            raise ValueError("Each item needs a name and a quantity")
+        if not isinstance(item, dict) or "quantity" not in item:
+            raise ValueError("Each item needs a quantity")
+        if "name" in item:
+            label = str(item["name"])
+        elif "ambiguous" in item:
+            options = item["ambiguous"]
+            if (not isinstance(options, list) or len(options) < 2
+                    or not all(isinstance(o, str) for o in options)):
+                raise ValueError("Invalid ambiguous item")
+            label = " or ".join(options)
+        else:
+            raise ValueError("Each item needs a name or an ambiguous list")
         q = item["quantity"]
         if isinstance(q, bool) or not isinstance(q, int):
-            raise ValueError("Invalid quantity for " + str(item["name"]))
+            raise ValueError("Invalid quantity for " + label)
         if q < 1 or q > MAX_QUANTITY:
-            raise ValueError("Quantity for " + str(item["name"]) +
+            raise ValueError("Quantity for " + label +
                              " must be between 1 and " + str(MAX_QUANTITY))
 def save_pending(call_sid, items):
     with sqlite3.connect(DB_PATH) as conn:
